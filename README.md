@@ -8,5 +8,6 @@ This repository contains results of the differntially expressed genes (DE) obtai
 4) Ducrest_2024:Results of STAR - HTSeq - Deseq2 differentially expressed genes between MC1RVV and MC1RVI males
 5) Ducrest_2024:Results of Kallisto - Deseq2 differentially expressed genes between MC1RVV and MC1RVI males
 6) Ducrest-2024:Results of the 3 trials of Kallisto-Deseq2 differentially expressed genes between MC1RVV and MC1RVI males picking at randon one of the 2 siblings of the 5 broods
-7) Ducrest-2024:Location of the differentially expressed genes on the barn owl scaffolds and compared to their position in chicken (Gga6) and golden eagle (bAquChr1.4)
-8) Ducrest-2024:scripts
+7) Ducrest-2024:MC1R genotypes derived gene significance and module membership of the WGCNA dark-olive-green module containing the differentially expressed (DE) genes found with Kallisto-Deseq2 method
+8) Ducrest-2024:Location of the differentially expressed genes on the barn owl scaffolds and compared to their position in chicken (Gga6) and golden eagle (bAquChr1.4)
+9) Ducrest_2024:scripts
