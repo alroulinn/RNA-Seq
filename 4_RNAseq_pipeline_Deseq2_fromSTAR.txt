@@ -1,0 +1,601 @@
+########################################---- RNA-seq analysis ----########################################
+#DESEQ2_TytoV4_HTSEQ
+# R Packages
+{ install.packages("~/Documents/R/Rcpp_0.12.9.tar.gz", repos = NULL, type = "source")
+  source("http://bioconductor.org/biocLite.R")
+  biocLite("DESeq2")
+  library('DESeq2')
+}
+#create a file on the computer with all the same name from RNAseq2_Volumes
+
+# Loading RAW count data
+{
+  setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Counts/STAR_HTSEQ")
+  example <- read.table("lib1.Star.txt", header=F); example #the h=T, the first count is missing
+ 
+  libraries <- list.files()
+  libraries
+  
+  count.data <- matrix(nrow=nrow(example),ncol=length(libraries))
+  for(i in 1:length(libraries)){
+    library.n <- read.table(libraries[i], header=F); library.n #the h=T, the first count is missing
+    count.data[,i] <- library.n[,2]
+    if(i == length(libraries)) row.names(count.data) <- row.names(library.n[1])
+  }
+  #colnames(count.data) <- sub(".txt", "", libraries)
+  colnames(count.data) <- sub(".Star.txt", "",libraries)
+
+  colnames(count.data)
+  row.names(count.data) <- example[,1]
+  count.data <- as.data.frame(count.data)
+  str(count.data)
+  head(count.data)
+  
+
+tail(count.data)
+ count.data<-count.data[-c(18890:18895), ]
+ 
+# example <- read.table("lib19.Star.txt", header=F)
+ #head(example)
+# library(data.table)
+ #library(tidyr)
+ #library(tidyverse)
+ #libtot<-map_dfc(list.files("~/Documents/sequencing_results/RNAseq/RNAseq2016/Counts/STAR_HTSEQ"), fread)
+ 
+ #Erreur : Can't recycle `..1` (size 18895) to match `..11` (size 18894).
+# Run `rlang::last_error()` to see where the error occurred.
+ 
+###count data 
+ tail(count.data)
+V4.count.data<-count.data
+ setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+  save(V4.count.data, file="V4.count.data.RData")
+ load("V4.count.data.RData")
+ View(V4.count.data)
+ }
+ #check raw data
+ { 
+a<- V4.count.data["MC1R", ]; a
+      lib1 lib10 lib11 lib12 lib13 lib14 lib15 lib16 lib17 lib18 lib19 lib2 lib20 lib21 lib22
+MC1R  336   192   160   363   140     6   633   143   308   194   407  141   136   168   208
+      lib23 lib24 lib25 lib26 lib27 lib28 lib29 lib3 lib30 lib31 lib32 lib33 lib34 lib35 lib36
+MC1R   285   667    65   246   300   220     5  172   581   416   165   177   176   119   196
+      lib37 lib38 lib39 lib4 lib40 lib41 lib42 lib43 lib44 lib45 lib46 lib47 lib48 lib5 lib6
+MC1R   282   490   251  343   138   130   136   364   412   103   126   108    92  154  112
+      lib7 lib8 lib9
+MC1R   43    5  138
+ #lib14, 8 are MC1R VI put the individual file to analyse further
+
+colSums(V4.count.data)
+lib1    lib10    lib11    lib12    lib13    lib14    lib15    lib16    lib17    lib18 
+34703095 41946944 40607499 27198822 36384897 20244617 36652923 33774041 38119730 38122042 
+lib19     lib2    lib20    lib21    lib22    lib23    lib24    lib25    lib26    lib27 
+34578476 26036978 40032792 47083781 33716714 42895910 40051594 32146532 35249773 38918132 
+lib28    lib29     lib3    lib30    lib31    lib32    lib33    lib34    lib35    lib36 
+30314210 31485206 33613637 41067267 42358615 42180640 37305805 38667016 32908355 43713148 
+lib37    lib38    lib39     lib4    lib40    lib41    lib42    lib43    lib44    lib45 
+43984415 43335517 34796121 35503936 41548680 35609265 44522543 46556493 44012187 41775728 
+lib46    lib47    lib48     lib5     lib6     lib7     lib8     lib9 
+38378154 41467215 39838215 36717275 35884065 30813917 31591549 36745104 
+ 
+mean(colSums(V4.count.data))
+#37399158
+par(mfrow=c(1,1))
+
+boxplot(a,colSums(V4.count.data))
+plot(colSums(V4.count.data))
+
+}
+
+#remove rRNA: it is 
+{Tyto alba 5.8S ribosomal RNA (LOC122154493), rRNA
+Tyto alba 5.8S ribosomal RNA (LOC122154492), rRNA
+Tyto alba 5.8S ribosomal RNA (LOC122154485), rRNA
+Tyto alba 28S ribosomal RNA (LOC122154475), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154472), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154470), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154469), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154468), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154467), rRNA
+Tyto alba 5.8S ribosomal RNA (LOC116965655), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154466), rRNA
+Tyto alba 18S ribosomal RNA (LOC122154465), rRNA
+Tyto alba 18S ribosomal RNA (LOC116965653), rRNA
+####71 in total see file fasta rRNA
+a<- V4.count.data["MC1R", ]; a
+
+#LOC116965654 lib10 counts: 1940112
+#pair.count.data.worRNA<-pair.count.datab[pair.count.datab$Lib10 != 1940112, ]; 
+#LOC104367819 = scale keratin
+
+#LOC116965654 28S
+a<- V4.count.data["LOC122154472", ]; a
+#0 #18S
+a<- V4.count.data["LOC122154475", ]; a
+#28S
+              lib1 lib10 lib11 lib12 lib13 lib14 lib15 lib16 lib17 lib18 lib19 lib2 lib20 lib21 lib22
+LOC122154475   63    33    20    32    13     7    13   223     7   110   234   26    63    43   111
+lib23 lib24 lib25 lib26 lib27 lib28 lib29 lib3 lib30 lib31 lib32 lib33 lib34 lib35 lib36
+LOC122154475   139   470     2     6     8   104     3   14   145    14   310    16     0   199    14
+lib37 lib38 lib39 lib4 lib40 lib41 lib42 lib43 lib44 lib45 lib46 lib47 lib48 lib5 lib6 lib7
+LOC122154475   117    15    10  638    20    72    17    77    72  1150    14     4    23  138   11   20
+lib8 lib9
+LOC122154475  159  86 #28S
+a<- V4.count.data["LOC122154485", ]; a
+#0 #5.8S
+a<- V4.count.data["LOC122154470", ]; a
+#0 18S
+a<- V4.count.data["LOC122154469", ]; a #0 #18S
+a<- V4.count.data["LOC116965654", ]; a
+###the ribosomal RNA were removed by the new annotation: 
+#the highest counts are
+#keratin-associated protein 21-1-like (LOC104359400), mRNA
+#keratin-associated protein 20-1 (LOC104359399), mRNA
+#LOC104356935  proline-rich protein 9 (LOC104356935), mRNA
+#keratin, type I cytoskeletal 19 (LOC104369263), mRNA
+#keratin, type II cytoskeletal 4-like (LOC104366445), mRNA
+#feather beta keratin-like (LOC116959260), mRNA
+}
+###remove tRNA:
+{
+#TRNAA-AGC, a lot of different with low counts 0 or 1, 305 rows
+V4.count.datab<-V4.count.data
+Name<-row.names(V4.count.datab)
+
+V4.count.datab<-cbind(V4.count.datab, Name); head (V4.count.datab) 
+dim(V4.count.datab) #[1] 18889    49
+V4.count.datac<-V4.count.datab[!grepl("TRNA", V4.count.datab$Name),]
+dim(V4.count.datac) #[1] 18584    49
+View(V4.count.datac) 
+
+V4.count.data.clean<-V4.count.datac[,-49]; View(V4.count.data.clean)
+setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+save(V4.count.data.clean, file="V4.count.data.clean.RData")
+load("V4.count.data.clean.RData")
+
+}
+
+###connect to individual file
+
+{ setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+ 
+ ind<- read.table("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4/allind20210906simp.txt", header=T)
+View(ind)
+
+  dim(ind) #48 58
+  
+  
+  #check the order of the individual file and the count data and make the correspondance
+  # Ordering individuals according to count.data order 
+ as.numeric(sub("lib","",colnames(V4.count.data.clean))) == ind$Libraries # Still in the same order		
+ ind<-ind[order(ind$Libraries),]; ind
+ V4.count.data.clean <- V4.count.data.clean[,order(as.numeric(sub("lib","",colnames(V4.count.data.clean))))]; V4.count.data.clean
+ ind<-ind[order(as.numeric(sub("lib","",colnames(V4.count.data.clean)))),]; ind
+ as.numeric(sub("lib","",colnames(V4.count.data.clean))) == ind$Libraries # Now they have the same order
+# [1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+ #[25] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+
+##filter low counts:
+
+keep <- rowSums(male.count.data.V4.ordered) >= 3 #min 1 in the 3 VI
+male.count.data.V4.filtered <- male.count.data.V4.ordered[keep,] #18584 columns out of 18889 are kept, a lot
+dim(male.count.data.V4.filtered) #[1] 17677    37
+
+save(male.count.data.V4.filtered, file="male.count.data.V4.filtered.RData")
+load("male.count.data.V4.filtered.RData") 
+
+# It will be good to add to this analysis PCA analysis on the general differences on gene expression
+{
+  log.male.count.data.V4.filtered<-rlog(as.matrix(male.count.data.V4.filtered)) # That takes a while to run
+  save(log.male.count.data.V4.filtered, file="log.male.count.data.V4.filtered.RData")
+  load("log.male.count.data.V4.filtered.RData") 
+}
+
+
+
+####General check: Differences between Libraries
+{ 
+  install.packages("~/Documents/R/pheatmap_1.0.12.tar", repos = NULL, type = "source")
+  library("RColorBrewer")
+  library("pheatmap")
+  #general
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$Libraries, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors)
+  #problem with L29: check the picture of the feather tips of the prepared RNA
+  
+  
+  #Exp
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$ExperimentalGroups, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors)
+   #ageFeather
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$AgeFeather, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+
+  
+  
+  #BatchExt
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$RNABatch, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+ 
+  
+  #ExtractionDay
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$ExtractionDay, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  
+  
+  #Lib prep
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$BatchLib, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #BatchLib effect
+  
+  #SeqLane
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$SeqLane, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors)   #no
+  
+  #P_uniquely_mapped_reads
+  sample.distances.pair <- dist(t((log.male.count.data.V4.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info$P_uniquely_mapped_reads, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #no
+  
+  
+}
+
+##only male Redo the analysis woL4_8_14_29######
+
+#featehr tips of Lib 4, 8, 14 and 29 are damaged, thus the RNA may not representative remove them
+
+{   ####remove lib 4,8,14,29
+  
+  setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+  load("V4.count.data.RData")
+  load("V4.count.data.clean.RData") #wo the tRNA
+  V4.count.data.clean.ordered <- V4.count.data.clean[,order(as.numeric(sub("lib","",colnames(V4.count.data.clean))))]; V4.count.data.clean.ordered
+  
+ male.count.data.V4.woL4_8_14_29  <- V4.count.data.clean.ordered[,-c(4,7,8,9,14,15,18,20,29,30,33,38,41,45,48)]  
+ male.count.data.V4.woL4_8_14_29.ordered <- male.count.data.V4.woL4_8_14_29[,order(as.numeric(sub("lib","",colnames(male.count.data.V4.woL4_8_14_29))))]; male.count.data.V4.woL4_8_14_29.ordered
+ dim(male.count.data.V4.woL4_8_14_29.ordered) #18584 33
+   
+ #individuals
+    ind<- read.table("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4/allind20210906simp.txt", header = T)
+   ind<-ind[order(ind$Libraries),]; ind
+ #   male.info <- ind[ind$Sex==1,]
+   male.info_woL4_8_14_29<-ind[-c(4,7,8,9,14,15,18,20,29,30,33,38,41,45,48)  ,]
+  
+    dim(male.info_woL4_8_14_29) #33 58
+  
+     
+    male.info_woL4_8_14_29<-male.info_woL4_8_14_29[order(male.info_woL4_8_14_29$Libraries),]; male.info_woL4_8_14_29
+    male.count.data.V4.woL4_8_14_29.ordered <- male.count.data.V4.woL4_8_14_29.ordered[,order(as.numeric(sub("lib","",colnames(male.count.data.V4.woL4_8_14_29.ordered))))]; male.count.data.V4.woL4_8_14_29.ordered
+    as.numeric(sub("lib","",colnames(male.count.data.V4.woL4_8_14_29.ordered))) ==  male.info_woL4_8_14_29$Libraries # Now they have the same order
+    #[1] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+    #[25] TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE TRUE
+    
+  }
+  
+
+  
+  
+  # General differences in gene expression profiles 
+  # It will be good to add to this analysis PCA analysis on the general differences on gene expression
+  {
+   # log.male.count.data.V4.woL4_8_14_29.ordered<-rlog(as.matrix(male.count.data.V4.woL4_8_14_29.ordered)) # That takes a while to run
+  #  setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+   #  save(log.male.count.data.V4.woL4_8_14_29.ordered, file="log.male.count.data.V4.woL4_8_14_29.ordered.RData")
+   # load("log.male.count.data.V4.woL4_8_14_29.ordered.RData")
+    save( male.info_woL4_8_14_29, file="male.info_woL4_8_14_29.RData")
+  }
+  
+  ##filter low counts:
+  
+  keep <- rowSums(male.count.data.V4.woL4_8_14_29.ordered) >= 3 #min 1 in the 3 VI
+  male.count.data.V4.woL4_8_14_29.filtered <- male.count.data.V4.woL4_8_14_29.ordered[keep,] #18178 columns out of 18889 are kept, a lot
+  dim(male.count.data.V4.woL4_8_14_29.filtered) #[1] 17643    33
+  
+  save(male.count.data.V4.woL4_8_14_29.filtered, file="male.count.data.V4.woL4_8_14_29.filtered.RData")
+  load("male.count.data.V4.woL4_8_14_29.filtered.RData") 
+  
+  # It will be good to add to this analysis PCA analysis on the general differences on gene expression
+  {
+    log.male.count.data.V4.woL4_8_14_29.filtered<-rlog(as.matrix(male.count.data.V4.woL4_8_14_29.filtered)) # That takes a while to run
+    save(log.male.count.data.V4.woL4_8_14_29.filtered, file="log.male.count.data.V4.woL4_8_14_29.filtered.RData")
+    load("log.male.count.data.V4.woL4_8_14_29.filtered.RData") 
+  }
+  
+  
+  ####General check: Differences between Libraries
+  { 
+  library("RColorBrewer")
+  library("pheatmap")
+  #general
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$Libraries, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors)
+  #cluster Lib 26 and 36,39 and 12,17, 13,32,44 and 24,28, different from the others
+  
+  #Exp
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$ExperimentalGroups, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors)
+  #some clustering per experimentalgroup Lib VV-white: 35, 42,46,3, not cluster of VI
+  #ageFeather
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$AgeFeather, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #Yes some age clustering 
+  
+  
+  #BatchExt
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$RNABatch, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #yes BatchRNA effect batch 8 and 9 all together,
+  
+  #ExtractionDay
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$ExtractionDay, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #yes
+  
+  #Lib prep
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$BatchLib, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #BatchLib effect
+
+ #SeqLane
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$SeqLane, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors)   #no
+  
+  #P_uniquely_mapped_reads
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$P_uniquely_mapped_reads, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #no
+  
+  #cPoiYa
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$cPoiYA, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #some clustering
+  
+  #male.info.woL29$FeatherTip
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$bout, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+  #nothing
+  
+  #male.info.woL29$FeatherTip
+  sample.distances.pair <- dist(t((log.male.count.data.V4.woL4_8_14_29.filtered)))
+  distances.matrix.pair <- as.matrix(sample.distances.pair)
+  rownames(distances.matrix.pair) <- paste(male.info_woL4_8_14_29$tips, sep="-")
+  colnames(distances.matrix.pair) <- NULL
+  colors<- colorRampPalette(rev(brewer.pal(9,"Blues")))(255)
+  pheatmap(distances.matrix.pair, clustering_distance_rows=sample.distances.pair,
+           clustering_distance_cols=sample.distances.pair,
+           col=colors) 
+ }
+   
+ #####DE#################################  
+       ### MC1R Color
+  
+  
+  setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+  
+  load("male.info_woL4_8_14_29.RData")
+  load("male.count.data.V4.woL4_8_14_29.filtered.RData") 
+  load("log.male.count.data.V4.woL4_8_14_29.filtered.RData") 
+  
+  male.info_woL4_8_14_29$cPoiYA <- as.factor(male.info_woL4_8_14_29$cPoiYA)
+  male.info_woL4_8_14_29$RNABatch<-as.factor(male.info_woL4_8_14_29$RNABatch)
+  male.info_woL4_8_14_29$BatchLib<-as.factor(male.info_woL4_8_14_29$BatchLib)
+  male.info_woL4_8_14_29$AgeFeather<-as.factor(male.info_woL4_8_14_29$AgeFeather)  
+  male.info_woL4_8_14_29$V126I <- as.factor(male.info_woL4_8_14_29$V126I) 
+  
+  male.info_woL4_8_14_29$color<-sub("[^-]*","",male.info_woL4_8_14_29$ExperimentalGroups); male.info_woL4_8_14_29$color
+  male.info_woL4_8_14_29$color <- sub("-","",sub("[^-]*","",male.info_woL4_8_14_29$ExperimentalGroups))
+  #male.info.woL29$color[male.info.woL29$color==""] <- NA; View(male.info.woL29)
+  male.info_woL4_8_14_29$color
+  
+  Model.Exp <- DESeqDataSetFromMatrix(countData = as.matrix(male.count.data.V4.woL4_8_14_29.filtered), colData = male.info_woL4_8_14_29, design = ~ V126I+color)
+  Model.Exp
+  #class: DESeqDataSet 
+  #dim: 17643 33 
+  #metadata(1): version
+  #assays(1): counts
+  #rownames(17643): A1CF A4GALT ... ZZEF1 ZZZ3
+  #rowData names(0):
+  #  colnames(33): lib1 lib2 ... lib46 lib47
+  #colData names(66): ExperimentalGroups RingNumber ... SeasonAndAge season
+  
+  Analysis.Model.Exp <- DESeq(Model.Exp)
+  #estimating size factors
+  #estimating dispersions
+  #gene-wise dispersion estimates
+  #mean-dispersion relationship
+  #final dispersion estimates
+  #fitting model and testing
+  #-- replacing outliers and refitting for 52 genes
+  #-- DESeq argument 'minReplicatesForReplace' = 7 
+  #-- original counts are preserved in counts(dds)
+  #estimating dispersions
+  #fitting model and testing
+  
+  Analysis.Model.Exp
+  #class: DESeqDataSet 
+  #dim: 17643 33 
+  #metadata(1): version
+  #assays(4): counts mu H cooks
+  #rownames(17643): A1CF A4GALT ... ZZEF1 ZZZ3
+  #rowData names(50): baseMean baseVar ... deviance maxCooks
+  #colnames(33): lib1 lib2 ... lib46 lib47
+  #colData names(67): ExperimentalGroups RingNumber ... season sizeFactor
+  
+  resultsNames(Analysis.Model.Exp)
+  #  "Intercept"          "V126I_VV_vs_VI"     "color_white_vs_red"
+  
+  # MC1R
+  Results.Analysis.Model.Exp <-results(Analysis.Model.Exp, name="V126I_VV_vs_VI" ) 
+  
+  sum(Results.Analysis.Model.Exp$pvalue <= 0.05, na.rm=T) # 860
+  sum(Results.Analysis.Model.Exp$pvalue <= 0.1, na.rm=T) # 1943
+  
+  sum(Results.Analysis.Model.Exp$padj <= 0.05, na.rm=T) # 24
+  sum(Results.Analysis.Model.Exp$padj <= 0.1, na.rm=T) #30
+  
+  resInt<-results(Analysis.Model.Exp, name="V126I_VV_vs_VI",   alpha=0.05)
+  resInt<-resInt[order(resInt$padj), ]
+  
+  head(resInt, n=10)
+  head(resInt, n=15)
+  head(resInt, n=20)
+  head(resInt, n=25)
+  #  log2 fold change (MLE): V126I VV vs VI 
+  Wald test p-value: V126I VV vs VI 
+  DataFrame with 10 rows and 6 columns
+  baseMean log2FoldChange     lfcSE      stat      pvalue        padj
+  <numeric>      <numeric> <numeric> <numeric>   <numeric>   <numeric>
+    TYRP1         235.9607      -6.943262  1.027259  -6.75902 1.38933e-11 2.30711e-07
+  SLC45A2       451.4737      -3.709273  0.569137  -6.51737 7.15523e-11 3.96066e-07
+  TYR           427.8444      -3.648538  0.555107  -6.57268 4.94177e-11 3.96066e-07
+  CALB1          39.6426       2.558141  0.420229   6.08750 1.14690e-09 4.76136e-06
+  MFSD12        923.4327      -0.734117  0.131605  -5.57819 2.43034e-08 8.07163e-05
+  SLC6A4        963.5138      -1.427096  0.262899  -5.42831 5.68911e-08 1.57456e-04
+  DDC          1333.3401      -2.011971  0.377216  -5.33374 9.62091e-08 2.28235e-04
+  PMEL         4702.4537      -1.465112  0.277457  -5.28050 1.28829e-07 2.67417e-04
+  MLANA        1612.5302      -1.286866  0.256607  -5.01494 5.30506e-07 9.78842e-04
+  LOC122153719   89.2017      -2.034067  0.413496  -4.91919 8.69029e-07 1.44311e-03
+  LOC104357634   35.7612       -1.90680  0.391532  -4.87011 1.11536e-06  0.00168379
+  GPR143        365.4666       -1.44399  0.298576  -4.83624 1.32315e-06  0.00183102
+  VAT1L         203.9278       -1.14790  0.248376  -4.62164 3.80724e-06  0.00486331
+  SYNGR3        268.2901       -1.16639  0.256790  -4.54222 5.56661e-06  0.00660279
+  LOC116960911  125.6388       -1.00454  0.222481  -4.51518 6.32639e-06  0.00700373
+  RASL10B        22.3095      -1.673865  0.376178  -4.44966 8.60071e-06  0.00892646
+  RAB38         879.2640      -1.182753  0.268418  -4.40638 1.05113e-05  0.01026773
+  LOC116960306  145.1708      -0.927752  0.214049  -4.33429 1.46231e-05  0.01349060
+  TBXA2R        156.3448      -0.753956  0.175357  -4.29956 1.71137e-05  0.01495735
+  SERPINE3       12.2538      -1.174179  0.278217  -4.22037 2.43904e-05  0.02025132
+  VSTM2L        221.6808      -0.840950 0.2038113  -4.12612 3.68932e-05   0.0291737
+  RAB3C          33.7107      -1.409602 0.3448020  -4.08815 4.34830e-05   0.0317531
+  STK32A        102.0124      -0.911548 0.2231170  -4.08551 4.39794e-05   0.0317531
+  TRMT12        410.9941      -0.356192 0.0896964  -3.97109 7.15442e-05   0.0495026
+  
+  
+  LOC122152587   86.7688      -2.737774 0.6957134  -3.93520 8.31262e-05   0.0552158
+  
+  
+  
+  
+  summary(resInt)
+  # out of 17643 with nonzero total read count
+  #adjusted p-value < 0.05
+  #LFC > 0 (up)       : 1, 0.0057%
+  #LFC < 0 (down)     : 23, 0.13%
+  #outliers [1]       : 10, 0.057%
+  #low counts [2]     : 1027, 5.8%
+  #(mean count < 1)
+  #[1] see 'cooksCutoff' argument of ?results
+  #[2] see 'independentFiltering' argument of ?results
+  
+  setwd("~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4")
+  
+  write.table(resInt, file="~/Documents/sequencing_results/RNAseq/RNAseq2016/Analyses_DE/Deseq2/DEAnalysis_LUIS/TytoV4/DE_MC1Rwithcolor_005_malewoL4_8_14_29_final.txt", row.names=TRUE, col.names=TRUE)
+  

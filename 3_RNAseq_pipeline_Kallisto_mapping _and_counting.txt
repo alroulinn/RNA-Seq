@@ -1,0 +1,71 @@
+######Kalisto_index
+
+#! /bin/bash
+
+#SBATCH --account=aroulin1_barn_owl_wwp
+#SBATCH --partition cpu
+
+#SBATCH --job-name=kallisto_indexing_oldgenome
+#SBATCH --output=%x_%j.output.txt
+#SBATCH --error=%x_%j.error.txt
+#SBATCH --mail-user=anne-lyse.ducrest@unil.ch
+#SBATCH --mail-type=ALL
+#SBATCH -t 0-02:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=200G
+
+
+# Modules
+module load gcc/9.3.0 kallisto/0.46.2 
+
+# Directories and files 
+fasta=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/old_genome/GCF_902150015.1_genome_assembly_l500_rna_from_genomic.fna
+index=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/index/Kallisto/kallisto_transcripts.idx
+
+#command
+kallisto index -i $index $fasta
+ 
+
+#######################################################
+
+#####Kallisto mapping
+#! /bin/bash
+
+#SBATCH --account=aroulin1_barn_owl_wwp
+#SBATCH --partition cpu
+
+#SBATCH --job-name=kallisto_Lib1
+#SBATCH --output=%x_%j.output.txt
+#SBATCH --error=%x_%j.error.txt
+#SBATCH --mail-user=anne-lyse.ducrest@unil.ch
+#SBATCH --mail-type=ALL
+#SBATCH -t 0-02:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=8G
+
+
+
+# Modules
+module load gcc/9.3.0 kallisto/0.46.2 
+
+
+# Directories and files 
+index=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/index/Kallisto/kallisto_transcripts.idx
+mkdir /scratch/aroulinn/genome/mapping/Lib1/Kallisto
+outputDir=/scratch/aroulinn/genome/mapping/Lib1/Kallisto
+
+readDir=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/trimmed/Lib1
+reads_1=lib1_L2_R1.trimmed.fastq.gz 
+reads_2=lib1_L2_R2.trimmed.fastq.gz
+
+
+kallisto quant -i $index -b 100 -o $outputDir --pseudobam $readDir/$reads_1 $readDir/$reads_2 
+
+############################################################
+
+
+

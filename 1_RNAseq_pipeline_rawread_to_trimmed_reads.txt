@@ -1,0 +1,69 @@
+#1)use prinseq to remove polydT or polydA from the rawreads and trimmmomatic to remove the adapters
+
+###on the cluster
+#####################Prinseq script###
+
+#!/bin/bash
+
+#SBATCH --account=aroulin1_barn_owl_wwp
+#SBATCH --partition=normal
+
+#SBATCH --job-name=prinseq_Lib47
+#SBATCH --output=%x_%j.output.txt
+#SBATCH --error=%x_%j.error.txt
+#SBATCH --mail-user=anne-lyse.ducrest@unil.ch
+#SBATCH --mail-type=ALL
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --mem=32G
+
+
+# To load the software
+module load Bioinformatics/Software/vital-it
+
+module add UHTS/Quality_control/prinseq-lite
+
+module add UHTS/Analysis/trimmomatic/0.36
+
+module add UHTS/Quality_control/fastqc/0.11.7
+
+
+#path to the rawdata: 
+Reads=/scratch/axiom/FAC/FBM/DEE/aroulin1/barn_owl_wwp/aroulinn/genome/rawreads/Lib47
+mkdir /scratch/axiom/FAC/FBM/DEE/aroulin1/barn_owl_wwp/aroulinn/genome/trimmed/Lib47
+
+#path to trimmed reads: 
+trimmedDir=/scratch/axiom/FAC/FBM/DEE/aroulin1/barn_owl_wwp/aroulinn/genome/trimmed/Lib47
+
+#path to Illuminaclip adapter
+Illuminaclip=/scratch/axiom/FAC/FBM/DEE/aroulin1/barn_owl_wwp/aroulinn/genome/Illuminaclip
+
+#path to fastQC report
+#mkdir /scratch/axiom/FAC/FBM/DEE/aroulin1/barn_owl_wwp/aroulinn/genome/fastQC
+resultsDir=/scratch/axiom/FAC/FBM/DEE/aroulin1/barn_owl_wwp/aroulinn/genome/fastQC
+
+
+
+  for f in $Reads/*.fastq.gz
+	do 
+	gunzip $f
+  done
+
+
+prinseq-lite.pl -verbose -fastq $Reads/lib47_L8_R1.fastq -fastq2 $Reads/lib47_L8_R2.fastq -out_format 3 -out_good $Reads/Clean_1_lib47_L8 -out_bad $Reads/Bad_1_lib47_L8 -trim_tail_left 5 -trim_tail_right 5 -min_len 75 
+
+
+trimmomatic PE -threads 8 -phred33 $Reads/Clean_1_lib47_L8_1.fastq $Reads/Clean_1_lib47_L8_2.fastq $trimmedDir/lib47_L8_R1.trimmed.fastq $trimmedDir/lib47_L8_R1.unpaired.trimmed.fastq $trimmedDir/lib47_L8_R2.trimmed.fastq $trimmedDir/lib47_L8_R2.unpaired.trimmed.fastq  ILLUMINACLIP:$Illuminaclip/TruSeq2-PE.fa:2:30:5:3:"true" MAXINFO:75:0.5 MINLEN:75
+
+  
+for f in $trimmedDir/lib47_L8_R*.trimmed.fastq
+do 
+	fastqc $f -f fastq -t 4 -o $resultsDir
+done
+
+
+ gzip $trimmedDir/lib47_L8_R*.trimmed.fastq
+ gzip $Reads/lib47_L8_R*.fastq
+
+###############

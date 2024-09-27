@@ -1,0 +1,157 @@
+library(readxl)
+RNAseq_qPCR_norm2genes_phenowoSEgenecontr <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/for_publi/RNAseq_qPCR_norm2genes_phenowoSEgenecontr.xlsx")
+View(RNAseq_qPCR_norm2genes_phenowoSEgenecontr)  
+qPCR<-RNAseq_qPCR_norm2genes_phenowoSEgenecontr
+
+
+#exploration my data#######
+
+#ATP6V1C2
+par(mfrow=c(1,2))
+{ with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~Sex, main="ATP6V1C2 Sex", xlab="Sex", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet du sexe
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~MC1Rgenotype, main="ATP6V1C2 MC1R", xlab="MC1R genotype", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet MC1R
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~FeatherAge, main="ATP6V1C2 Age", xlab="Age of Feather", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet age?
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~cPoiYA, main="ATP6V1C2 cPoiYA", xlab="cPoiYA", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet coloration
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~NbPoiYA, main="ATP6V1C2 NbPoiYA", xlab="NbPoiYA", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet des points
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~DiaPoiYA, main="ATP6V1C2 DiaPoiYA", xlab="DiaPoiYA", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#pas clair
+
+#try plotter function
+{ 
+plotter <- function(Transcript.Name){
+  y <- as.vector(t(RNAseq_qPCR_norm2genes_phenowoSEgenecontr[, which(colnames(RNAseq_qPCR_norm2genes_phenowoSEgenecontr) == Transcript.Name)]))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$DiaPoiYA, mean))
+  
+  par(mfrow=c(2,3))
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype), ylab= Transcript.Name, xlab="MC1R", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+  
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA), ylab= Transcript.Name, xlab="cPoiYA", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA), method = "jitter", pch = 19,col = 3,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge), ylab= Transcript.Name, xlab="Feather Age", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex), ylab= Transcript.Name, xlab="Sex", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex), method = "jitter", pch = 19,col = 4,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), ylab= Transcript.Name, xlab="NbPoiYA", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), method = "jitter", pch = 19,col = 4,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$DiaPoiYA), ylab= Transcript.Name, xlab= "DiaPoiYA", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$DiaPoiYA), method = "jitter", pch = 19,col = 4,vertical = TRUE, add = TRUE)      
+  
+}
+
+#Barplot#########
+
+{
+   
+   library(readxl)
+    RNAseq_qPCR_norm2genes_phenowoSEgenecontr <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/for_publi/RNAseq_qPCR_norm2genes_phenowoSEgenecontr.xlsx")
+  View(RNAseq_qPCR_norm2genes_phenowoSEgenecontr)   
+  qPCR<-RNAseq_qPCR_norm2genes_phenowoSEgenecontr
+  #remove columns we do not want to present: ASIP, ATP6V1c2... not in the last results
+  qPCR2022<-qPCR[,c(-2,-3,-6,  -8, -10,-15,  -17, -19, -22, -25, -29 )]
+  dim(qPCR2022) #70, 37
+  
+  
+   #1) create a dataframe with the data one column = MC1R genotype, the second column = mean normalised cQ for each genotype
+      VV<-qPCR2022[qPCR2022$MC1Rgenotype=="VV",]  ; VV  
+      VI<-qPCR2022[qPCR2022$MC1Rgenotype=="VI",]  ; VI 
+
+      VVb<-as.data.frame(VV)
+      VIb<-as.data.frame(VI)
+      dim(VVb)
+      
+      library(tibble)
+      library(dplyr)
+      library(tidyr)
+      
+      #My data ######### 
+      #calculate the mean for each column of the table
+            moy.VV<-apply(VVb[2:18],2,mean, na.rm = TRUE); moy.VV
+            moy.VI<-apply(VIb[2:18],2,mean, na.rm = TRUE); moy.VI
+            sd.VV<-apply(VVb[2:18],2,sd, na.rm = TRUE); sd.VV
+            sd.VI<-apply(VIb[2:18],2,sd, na.rm = TRUE); sd.VI
+           # se.VV<-apply(VVb[2:18],2,sd/sqrt(length(VVb)), na.rm = TRUE); se.VV
+            
+            
+            sd.moy.VV.VI.genes22<-rbind(moy.VV, moy.VI,sd.VV,sd.VI)
+            #take only the genes I have
+            #sd.moy.VV.VI.genes22<-sd.moy.VV.VI[ , c(-2,-5, -9,-18, -21 )]; sd.moy.VV.VI.genes22
+           sd.moy.VV.VI.genes22<-as.data.frame(sd.moy.VV.VI.genes22)
+            sd.moy.VV.VI.genes22$MC1r<-row.names(sd.moy.VV.VI.genes22)
+            names(sd.moy.VV.VI.genes22)
+            write.table(sd.moy.VV.VI.genes22, file="~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/genesforgraph.txt", row.names=TRUE, col.names=TRUE)
+          View(sd.moy.VV.VI.genes22)
+          
+                    meanGeneexpressionMC1R <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/meanGeneexpressionMC1R.xlsx")
+             View(meanGeneexpressionMC1R)      
+            names(meanGeneexpressionMC1R)
+            #[1] "genes"                "Norm_Gene_expression" "MC1R"                 "SD"                   "SE"                  
+
+  ##graphe all genes          
+    {      par(mfrow=c(1,1))
+            library(ggplot2)
+            # Barplot basique
+            p<-ggplot(data=meanGeneexpressionMC1R, aes(x=genes, y=Norm_Gene_expression, fill=MC1R)) +
+              geom_bar(stat="identity", color="black", position=position_dodge()) + theme_minimal() +
+            # SE est utilisé comme barre d'erreur
+            geom_errorbar(aes(ymin=Norm_Gene_expression-SE, ymax=Norm_Gene_expression+SE), width=.2,
+                          position=position_dodge(.9)) +
+              # Couleurs personnalisées
+            scale_fill_manual(values=c('#D2691E','#FFFFE0')) 
+            #add label
+            p + labs(x="Normalised gene expression", y = "Genes")
+            # Barplot horizontal
+            p + coord_flip() 
+            
+            #p + scale_fill_brewer(palette="Paired") + theme_minimal() 
+            #FFE5CC
+   }         
+#graphe for publication##############
+            #graphe only some genes          
+            
+    {         library(readxl)
+      genesforgraph20240212b <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/for_publi/genesforgraph20240212b.xlsx")
+     View(genesforgraph20240212b)   
+     names(genesforgraph20240212b)
+   #  [1] "Genes"                      "Normalised_gene_expression" "MC1R"                       "SD"                        
+    # [5] "SE"   
+            
+            library(ggplot2)
+            # Barplot basique
+            p<-ggplot(data=genesforgraph20240212b, aes(x=Genes, y=Normalised_gene_expression, fill=MC1R)) +
+              geom_bar(stat="identity", color="black", position=position_dodge()) + theme_minimal() +
+              # SE est utilisé comme barre d'erreur
+              geom_errorbar(aes(ymin=Normalised_gene_expression-SE, ymax=Normalised_gene_expression+SE), width=.2,
+                            position=position_dodge(.9)) +
+              # Couleurs personnalisées
+              scale_fill_manual(values=c('#D2691E','#FFFFE0')) 
+            #add label
+            p + labs(x="Normalised gene expression", y = "Genes")
+            # Barplot horizontal
+            p + coord_flip() 
+            
+           #
+           # second trial to conserve orders of x 
+           
+       
