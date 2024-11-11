@@ -1,0 +1,72 @@
+#####STAR_index
+#! /bin/bash
+
+#SBATCH --account=aroulin1_barn_owl_wwp
+#SBATCH --partition cpu
+#SBATCH --job-name=index_Star_v4
+#SBATCH --output=%x_%j.output.txt
+#SBATCH --error=%x_%j.error.txt
+#SBATCH --mail-user=anne-lyse.ducrest@unil.ch
+#SBATCH --mail-type=ALL
+#SBATCH -t 0-02:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=40G
+
+
+# Modules
+module load gcc/9.3.0 star/2.7.8a
+
+# Directories and files
+
+genomeDir=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/index/STAR_V4_modifV4genome
+#pathFasta=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/genome/unzip/unzip.bnx.fa
+Annotpath=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/annotation/annot_v4
+
+
+STAR --runThreadN 16 --runMode genomeGenerate --genomeDir $genomeDir --genomeFastaFiles $Annotpath/GCF_018691265.1_T.alba_DEE_v4.0_genomic_modif.fna --sjdbGTFfile $Annotpath/GCF_018691265.1_T.alba_DEE_v4.0_genomic_modifMC1R.gtf 
+
+##################################
+####mapping and counting HtSeq
+
+#! /bin/bash
+
+#SBATCH --account=aroulin1_barn_owl_wwp
+#SBATCH --partition cpu
+
+#SBATCH --job-name=Star_V4_mapping_L47
+#SBATCH --output=%x_%j.output.txt
+#SBATCH --error=%x_%j.error.txt
+#SBATCH --mail-user=anne-lyse.ducrest@unil.ch
+#SBATCH --mail-type=ALL
+#SBATCH -t 0-08:00
+#SBATCH --nodes=1
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=16
+#SBATCH --mem=40G
+
+# Modules
+module load gcc/9.3.0 star/2.7.8a htseq/0.11.2
+
+# Directories and files
+reads_1=lib47_L8_R1.trimmed.fastq.gz 
+reads_2=lib47_L8_R2.trimmed.fastq.gz
+dir=Lib47
+name=lib47.Star
+
+mkdir /scratch/aroulinn/genome/mapping/$dir/STAR
+genomeDir=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/index/STAR_V4_modifV4genome/
+readDir=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/trimmed/$dir
+outFileNamePrefixDir=/scratch/aroulinn/genome/mapping/$dir/STAR
+annotation=/work/FAC/FBM/DEE/aroulin1/barn_owl_wwp/genome_data/annotation/annot_v4/GCF_018691265.1_T.alba_DEE_v4.0_genomic_modifMC1R.gtf
+
+
+# paried-end data and sorted SAM:
+STAR --genomeDir $genomeDir  --runThreadN 16 --readFilesCommand zcat --readFilesIn $readDir/$reads_1 $readDir/$reads_2 \
+--outFileNamePrefix $outFileNamePrefixDir/$name.  --sjdbGTFfile $annotation --clip3pAdapterSeq  polyA polyA \
+--clip3pAdapterMMp 0.1 0.1 --alignIntronMin 5 --quantMode GeneCounts --outMultimapperOrder Random \
+--twopassMode Basic  --outSAMprimaryFlag AllBestScore --outSAMtype BAM SortedByCoordinate 
+htseq-count -s no -r pos --type exon --idattr gene_id  -f bam $outFileNamePrefixDir/$name.Aligned.sortedByCoord.out.bam $annotation > $outFileNamePrefixDir/$name.txt
+
+############

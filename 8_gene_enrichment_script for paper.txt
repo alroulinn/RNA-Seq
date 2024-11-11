@@ -1,0 +1,538 @@
+ ###TOPGO########################
+  
+  if (!require("topGO", quietly = TRUE))
+    BiocManager::install("topGO")
+  if (!require("GO.db", quietly = TRUE))
+    BiocManager::install("GO.db")
+  if (!require("biomaRt", quietly = TRUE))
+    BiocManager::install("biomaRt")
+  if (!require("Rgraphviz", quietly = TRUE))
+    BiocManager::install("Rgraphviz")
+  if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+  BiocManager::install()
+  BiocManager::install("org.Gg.eg.db")
+  
+  library(org.Gg.eg.db)
+  
+  library(topGO)
+
+  library(biomaRt)
+ 
+  
+  # Assume 'my_de_genes' contains a list of DEGs from the Barn owl
+  # First, use biomaRt to find orthologues in the chicken (Gallus gallus)
+  
+  
+  ###find ENSEMBL genes names####
+  
+  #### Connect to the Ensembl database#######
+  mart <- useMart("ensembl")
+  
+  # List available datasets
+  datasets <- listDatasets(mart)
+  
+  # View the datasets (this will print a list of available datasets)
+  print(datasets)
+   #ggallus_gene_ensembl
+  
+  ####choose the database#######
+  mart <- useMart("ensembl", dataset = "ggallus_gene_ensembl")
+  
+  
+  ####load your RNASeq_genesID of all the genes######
+#  library(readxl)
+  all_genes_DE_Kallisto_MC1R_color <- read.csv("~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/all_genes_DE_Kallisto_MC1R_color.txt", sep="")
+    View(all_genes_DE_Kallisto_MC1R_color) 
+    owl_genes<-all_genes_DE_Kallisto_MC1R_color
+    owl_genes<-as.vector(owl_genes)
+ 
+    #####get the orthologues####   
+ {
+    # Get orthologues in chicken
+  
+     # View the attributes to find the correct one related to chicken homologs
+    #print(attributes)
+    
+    # Check if BioMart recognizes your input IDs
+    owl_gene_check <- getBM(
+      attributes = c("ensembl_gene_id"),
+      filters = "external_gene_name",  # If your owl_genes are gene symbols
+      values = owl_genes,
+      mart = mart
+    )
+    orthologues<- owl_gene_check
+    
+    ####load the DE genes####
+    library(readxl)
+    foreground_Gga_ENSEMBL_woTRMT2 <- read_excel("Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/2024_orthologs_Enseml_Ggalus/foreground_Gga_ENSEMBL_woTRMT2.xlsx")
+     View(foreground_Gga_ENSEMBL_woTRMT2)   
+     my_de_genes<-as.vector(foreground_Gga_ENSEMBL_woTRMT2$ENS_ID)
+    
+    
+    ###  prepare your gene list####
+    geneList <- factor(as.integer(orthologues$ensembl_gene_id %in% my_de_genes))
+    names(geneList) <- orthologues$ensembl_gene_id
+    
+    ###GO#######
+    if (!requireNamespace("BiocManager", quietly = TRUE))
+      install.packages("BiocManager")
+    BiocManager::install()
+    BiocManager::install("org.Gg.eg.db")
+    library(org.Gg.eg.db)
+    
+    # Load GO annotations for chicken genes
+    GOdata.gga <- new("topGOdata",
+                  ontology = "BP",
+                  allGenes = geneList,
+                  geneSelectionFun = function(x) x == 1,
+                  annot = annFUN.org, mapping = "org.Gg.eg.db", ID = "ensembl")
+    
+   # Building most specific GOs .....
+   # ( 3238 GO terms found. )
+    
+   # Build GO DAG topology ..........
+   # ( 6354 GO terms and 13593 relations. )
+    
+   # Annotating nodes ...............
+   # ( 8280 genes annotated to the GO terms. )
+    
+    
+    ###run enrichment#####
+    ###### Run enrichment analysis FISHER test######
+    result.gga.fisher <- runTest(GOdata.gga, algorithm = "classic", statistic = "fisher")
+    
+    top_results.gga.fisher <- GenTable(GOdata.gga, classicFisher = result.gga.fisher, topNodes = 50)
+            #the algorithm is scoring 293 nontrivial nodes parameters: 
+            #test statistic: fisher
+    
+       # Apply multiple testing correction using FDR (FDR)
+    top_results.gga.fisher$FDR <- p.adjust(top_results.gga.fisher$classicFisher, method = "fdr")
+    
+    # View results with adjusted p-values
+    print(top_results.gga.fisher)
+    
+    
+    # Generate table of top results
+    top_results.gga.fisher.100 <- GenTable(GOdata.gga, classicFisher = result.gga.fisher, topNodes = 100)
+    
+    
+    # Apply multiple testing correction using FDR (FDR)
+    top_results.gga.fisher.100$FDR <- p.adjust(top_results.gga.fisher.100$classicFisher, method = "fdr")
+    
+    # View results with adjusted p-values
+    print(top_results.gga.fisher.100)
+    
+    
+    #save first top 50 ontolgies sorted by adjusted pvalues
+    write.table(top_results.gga.fisher.100,file="~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/gene_enrichment_TOPGO_Gallus_wBg:Fisher100.txt",row.names=TRUE, col.names=TRUE)
+
+    ###keep only the parent GO term#####
+    #####Run enrichment analysis Weighted FISHER######
+    
+    # Use the weight01 or elim algorithm
+    # These algorithms reduce redundancy by down-weighting or eliminating parent-child terms with overlapping genes.
+    # The weight01 algorithm is often effective when there are many nested GO terms related to similar functions (like melanin production).
+    resultWeight.gga <- runTest(GOdata.gga, algorithm = "weight01", statistic = "fisher")
+    
+    # Extract the top 10 enriched GO terms (adjust as needed)
+    allRes.Weight01.gga <- GenTable(GOdata.gga, weightFisher = resultWeight.gga, topNodes = 50)
+    
+    # Display the summary table
+    print(allRes.Weight01.gga)
+    
+
+    cat("Number of annotated genes:", length(genes(GOdata.gga)), "\n") #8281 annotated genes
+    cat("Number of significant genes:", length(sigGenes(GOdata.gga)), "\n") #14 significant genes
+    
+     
+    # Check how many GO terms have non-zero scores
+    num_significant_terms <- sum(score(resultWeight.gga) < 0.05)  # Adjust threshold if needed #27
+    cat("Number of significant GO terms:", num_significant_terms, "\n")
+    #Number of significant GO terms: 26
+  
+    
+    ## Check how many genes are mapped to each of the top GO terms
+    for (go_term in allRes.Weight01.gga$GO.ID) {
+      genes_for_term <- genesInTerm(GOdata.gga, go_term)
+      cat("GO Term:", go_term, "- Number of genes:", length(genes_for_term[[go_term]]), "\n")
+    }
+    
+    #GO Term: GO:0032438 - Number of genes: 4 
+    GO Term: GO:0043473 - Number of genes: 14 
+    GO Term: GO:0051610 - Number of genes: 1 
+    GO Term: GO:0060406 - Number of genes: 1 
+    GO Term: GO:0051930 - Number of genes: 1 
+    GO Term: GO:0048662 - Number of genes: 1 
+    GO Term: GO:0032812 - Number of genes: 1 
+    GO Term: GO:0045777 - Number of genes: 2 
+    GO Term: GO:0007189 - Number of genes: 59 
+    GO Term: GO:0050848 - Number of genes: 3 
+    GO Term: GO:1900271 - Number of genes: 3 
+    GO Term: GO:0099509 - Number of genes: 3 
+    GO Term: GO:0042438 - Number of genes: 3 
+    GO Term: GO:0042427 - Number of genes: 4 
+    GO Term: GO:0090385 - Number of genes: 5 
+    GO Term: GO:0007611 - Number of genes: 5 
+    GO Term: GO:0006584 - Number of genes: 5 
+    GO Term: GO:0030318 - Number of genes: 6 
+    GO Term: GO:0045907 - Number of genes: 7 
+    GO Term: GO:0043267 - Number of genes: 7 
+    GO Term: GO:0001938 - Number of genes: 7 
+    GO Term: GO:0008643 - Number of genes: 13 
+    GO Term: GO:0007204 - Number of genes: 14 
+    GO Term: GO:0006904 - Number of genes: 14 
+    GO Term: GO:0008333 - Number of genes: 16 
+    GO Term: GO:0007200 - Number of genes: 21 
+    GO Term: GO:0009306 - Number of genes: 33 
+    GO Term: GO:0017157 - Number of genes: 37 
+    GO Term: GO:0032880 - Number of genes: 41 
+    GO Term: GO:0045732 - Number of genes: 42 
+    GO Term: GO:0035725 - Number of genes: 44 
+    GO Term: GO:0006954 - Number of genes: 47 
+    GO Term: GO:0072659 - Number of genes: 51 
+    GO Term: GO:0043066 - Number of genes: 60 
+    GO Term: GO:0006457 - Number of genes: 104 
+    GO Term: GO:0006520 - Number of genes: 117 
+    GO Term: GO:0007186 - Number of genes: 310 
+    GO Term: GO:0006468 - Number of genes: 517 
+    GO Term: GO:0007267 - Number of genes: 339 
+    GO Term: GO:0051239 - Number of genes: 244 
+    GO Term: GO:0009057 - Number of genes: 387 
+    GO Term: GO:0009058 - Number of genes: 2738 
+    GO Term: GO:0007268 - Number of genes: 188 
+    GO Term: GO:0009059 - Number of genes: 2359 
+    GO Term: GO:1903522 - Number of genes: 36 
+    GO Term: GO:0033002 - Number of genes: 1 
+    GO Term: GO:0018130 - Number of genes: 1329 
+    GO Term: GO:2000241 - Number of genes: 14 
+    GO Term: GO:0007188 - Number of genes: 80 
+    GO Term: GO:1901615 - Number of genes: 93 
+    
+    # Inspect the output for the first GO term in the list
+    genes_for_first_term <- genesInTerm(GOdata.gga, allRes.Weight01.gga$GO.ID[1])
+    str(genes_for_first_term)
+    #List of 1
+    List of 1
+   # $ GO:0032438: chr [1:4] "ENSGALG00010002210" "ENSGALG00010014092" "ENSGALG00010018374" "ENSGALG00010024745"
+    
+    
+    for (go_term in allRes.Weight01.gga$GO.ID) {
+      # Extract the genes for the given GO term (as a character vector)
+      genes_for_term <- genesInTerm(GOdata.gga, go_term)[[1]]  # Extract first element of the list
+      
+      # Check if any genes are associated with this GO term
+      if (length(genes_for_term) > 0) {
+        cat("Genes involved in GO term", go_term, ":\n", 
+            paste(genes_for_term, collapse = ", "), "\n")
+      } else {
+        cat("No genes found for GO term", go_term, "\n")
+      }
+    }
+    
+   
+    
+    ###to get all results, wiht annotated gene names #####
+    # Create a data frame to store results
+    top_results_with_annot_genes <- data.frame(
+      GO.ID = character(), 
+      Term = character(), 
+      Annotated = integer(), 
+      Significant = integer(), 
+      Expected = numeric(), 
+      p.value = numeric(), 
+      p.adjusted = numeric(),
+      Genes = character(), 
+      stringsAsFactors = FALSE
+    )
+    
+    # Loop through the top GO terms and extract gene names
+    for (i in 1:nrow(allRes.Weight01.gga)) {
+      go_term <- allRes.Weight01.gga$GO.ID[i]
+      
+      # Extract genes for the current GO term
+      genes_for_term <- genesInTerm(GOdata.gga, go_term)[[1]]
+      gene_list <- paste(genes_for_term, collapse = ", ")  # Join gene names into a string
+      
+      #FDR if needed
+      allRes.Weight01.gga$FDR <- p.adjust(allRes.Weight01.gga$weightFisher, method = "fdr")
+      
+      # Add row to the results data frame
+      top_results_with_annot_genes <- rbind(top_results_with_annot_genes, data.frame(
+        GO.ID = go_term,
+        Term = allRes.Weight01.gga$Term[i],
+        Annotated = allRes.Weight01.gga$Annotated[i],
+        Significant = allRes.Weight01.gga$Significant[i],
+        Expected = allRes.Weight01.gga$Expected[i],
+        p.value = allRes.Weight01.gga$weightFisher[i],
+        p.adjusted = allRes.Weight01.gga$FDR[i],
+        Genes = gene_list
+      ))
+    }
+    
+    print(top_results_with_annot_genes)
+
+    write.table(top_results_with_annot_genes,file="~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/gene_enrichment_TOPGO_Gga_wBg_weightedFIsher_annotgenes.txt",row.names=TRUE, col.names=TRUE)
+     
+   
+    ######to get significant genes#######
+    ###to get only the significant genes####
+    # Initialize a data frame to store results with significant genes
+    top_results_with_signif_genes <- data.frame(
+      GO.ID = character(),
+      Term = character(),
+      Annotated = integer(),
+      Significant = integer(),
+      Expected = numeric(),
+      p.value = numeric(),
+      Significant_Genes = character(),
+      stringsAsFactors = FALSE
+    )
+    
+    # Get the vector of significant genes used in TopGO
+    significant_genes <- names(geneList[geneList == 1])  # Assuming 1 = significant, 0 = non-significant
+    
+    # Loop through the overlapping GO terms
+    for (i in 1:nrow(allRes.Weight01.gga)) {
+      go_term <- allRes.Weight01.gga$GO.ID[i]  # Extract the GO term ID
+      
+      # Extract all genes annotated to this GO term
+      annotated_genes <- genesInTerm(GOdata.gga, go_term)[[1]]
+      
+      # Filter only the significant genes
+      sig_genes_for_term <- intersect(annotated_genes, significant_genes)
+      
+      # Join significant gene names into a string
+      gene_list <- if (length(sig_genes_for_term) > 0) {
+        paste(sig_genes_for_term, collapse = ", ")
+      } else {
+        "None"
+      }
+      
+      # Add a new row to the results data frame with relevant information
+      top_results_with_signif_genes <- rbind(top_results_with_signif_genes, data.frame(
+        GO.ID = go_term,
+        Term = allRes.Weight01.gga$Term[i],  # Use term names from overlap data
+        Annotated = allRes.Weight01.gga$Annotated[i],
+        Significant = allRes.Weight01.gga$Significant[i],
+        Expected = allRes.Weight01.gga$Expected[i],
+        p.value = allRes.Weight01.gga$FDR[i],  # Adjust p-value if needed
+        Significant_Genes = gene_list
+      ))
+    }
+    
+    # Print or save the final dataframe with overlapping terms and significant genes
+    print(top_results_with_signif_genes)
+    write.table(top_results_with_signif_genes,file="~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/gene_enrichment_TOPGO_Gga_wBg_weighted01_withsig_genes.txt",row.names=TRUE, col.names=TRUE)
+    
+     
+    #####Run enrichment analysis elim KS######
+    
+    allRes.Fisher.weight.gga <- GenTable(GOdata.gga, weightFisher = resultWeight.gga, topNodes = 50)
+    resultKS.elim.gga <- runTest(GOdata.gga, algorithm = "elim", statistic = "ks")
+   #does not work not enought genes
+    #	 Level 1:	1 nodes to be scored	(1920 eliminated genes)
+    #Error in ks.test.default(x.a, seq_len(N)[-x.a], alternative = "greater") : 
+    #  not enough 'y' data
+    
+    
+    #try differently
+     summary(GOdata.gga)
+    # Display the summary table
+    print(allRes.Fisher.weight.gga)
+    
+    resultWeight.KS.gga <- runTest(GOdata.gga, algorithm = "weight01", statistic = "ks")
+    
+    allRes.Weight.KS.gga <- GenTable(
+      GOdata.gga,
+      weightFisher = resultWeight.KS.gga,
+      topNodes = 50
+    )
+    print(allRes.Weight.KS.gga)
+    #GO not specific to melain general fucntions, not interesting results
+    
+    #try elim with a fisher test
+    resultWeight.gga <- runTest(GOdata.gga, algorithm = "weight01", statistic = "fisher")
+    
+    # Extract the top 10 enriched GO terms (adjust as needed)
+    allRes.Weight01.gga.10 <- GenTable(GOdata.gga, weightFisher = resultWeight.gga, topNodes = 10)
+    
+    
+    resultElim.gga <- runTest(GOdata.gga, algorithm = "elim", statistic = "fisher")
+  
+    
+      # Generate tables for both algorithms
+    elimResults.50 <- GenTable(GOdata.gga, elimFisher = resultElim.gga, topNodes = 50)
+    allRes.Weight01.gga.50 <- GenTable(GOdata.gga, weightFisher = resultWeight.gga, topNodes = 50)
+    
+    # Find overlapping GO terms
+    overlap.elim.weight.50 <- merge(elimResults.50, allRes.Weight01.gga.50, by = "GO.ID")
+    overlap<-overlap.elim.weight.50
+    
+    print(elimResults.50)
+    print(overlap.elim.weight.50)
+    write.table(overlap.elim.weight.50,file="~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/gene_enrichment_TOPGO_Gga_wBg_weighted01Elim.txt",row.names=TRUE, col.names=TRUE)
+    
+        #try to get all results, wiht gene names #####
+         # Initialize a data frame to store the results with genes
+        overlap_with_genes <- data.frame(
+         GO.ID = character(),
+         Term = character(),
+         Annotated = integer(),
+         Significant = integer(),
+         Expected = numeric(),
+         p.value = numeric(),
+         Genes = character(),
+          stringsAsFactors = FALSE
+       )
+    
+           # Loop through the overlapping GO terms
+            for (i in 1:nrow(overlap)) {
+            go_term <- overlap$GO.ID[i]  # Extract the GO ID
+      
+           # Extract the list of genes for this GO term
+           genes_for_term <- genesInTerm(GOdata.gga, go_term)[[1]]
+            gene_list <- paste(genes_for_term, collapse = ", ")  # Join gene names into a string
+      
+             # Add a new row to the results data frame with relevant information
+              overlap_with_genes <- rbind(overlap_with_genes, data.frame(
+              GO.ID = go_term,
+              Term = overlap$Term.x[i],  # Use terms from the overlap dataframe
+               Annotated = overlap$Annotated.x[i],
+              Significant = overlap$Significant.x[i],
+              Expected = overlap$Expected.x[i],
+              p.value = overlap$elimFisher[i],  # Adjust p-value column if needed
+              Genes = gene_list
+           ))
+          }
+    
+           # Print or save the final dataframe with overlapping terms and genes
+            print(overlap_with_genes)
+    
+            write.table(overlap_with_genes,file="~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/gene_enrichment_TOPGO_Gga_wBg_weighted01Elim_withannotgenes.txt",row.names=TRUE, col.names=TRUE)
+    
+       ###to get only the significant genes####
+          # Initialize a data frame to store results with significant genes
+          overlap_with_sign_genes <- data.frame(
+            GO.ID = character(),
+            Term = character(),
+             Annotated = integer(),
+             Significant = integer(),
+              Expected = numeric(),
+              p.value = numeric(),
+             Significant_Genes = character(),
+             stringsAsFactors = FALSE
+           )
+    
+          # Get the vector of significant genes used in TopGO
+          significant_genes <- names(geneList[geneList == 1])  # Assuming 1 = significant, 0 = non-significant
+    
+           # Loop through the overlapping GO terms
+           for (i in 1:nrow(overlap)) {
+           go_term <- overlap$GO.ID[i]  # Extract the GO term ID
+       
+          # Extract all genes annotated to this GO term
+            annotated_genes <- genesInTerm(GOdata.gga, go_term)[[1]]
+          
+            # Filter only the significant genes
+            sig_genes_for_term <- intersect(annotated_genes, significant_genes)
+      
+              # Join significant gene names into a string
+            gene_list <- if (length(sig_genes_for_term) > 0) {
+              paste(sig_genes_for_term, collapse = ", ")
+             } else {
+             "None"
+            }
+      
+           # Add a new row to the results data frame with relevant information
+            overlap_with_sign_genes <- rbind(overlap_with_sign_genes, data.frame(
+              GO.ID = go_term,
+              Term = overlap$Term.x[i],  # Use term names from overlap data
+               Annotated = overlap$Annotated.x[i],
+               Significant = overlap$Significant.x[i],
+               Expected = overlap$Expected.x[i],
+               p.value = overlap$elimFisher[i],  # Adjust p-value if needed
+               Significant_Genes = gene_list
+             ))
+           }
+    
+         # Print or save the final dataframe with overlapping terms and significant genes
+         print(overlap_with_sign_genes)
+         write.table(overlap_with_sign_genes,file="~/Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/cytoscape/gene_enrichment_TOPGO_Gga_wBg_weighted01Elim_withsig_genes.txt",row.names=TRUE, col.names=TRUE)
+    
+    ###############################################
+    
+    #make a figure for the paper
+    
+    #Figure Gene enrichment#################################################################################################
+    ###try with the cytoscape results on biological process
+    #the one for the figure to keep
+    { 
+      BiocManager::install("argparser")
+      #install.packages("RSQLite")
+      
+      library(argparser)
+      
+      library(ggplot2)
+      
+      # Incoming parameters
+      argv <- arg_parser('Draw a scatter plot based on the results of the enrichment analysis')
+      argv <- add_argument(argv, "--enrich", help = "Enrichment result file")
+      argv <- add_argument(argv, "--ndot", help = "The figure shows the number of pathways", type = 'numeric')
+      argv <- add_argument(argv, "--title", help = "Graphic title")
+      argv <- add_argument(argv, "--prefix", help = "Output picture prefix")
+      argv <- parse_args(argv)
+      enrich <- argv$enrich
+      ndot <- argv$ndot
+      title <- argv$title
+      prefix <- argv$prefix
+      
+      #enrich <- read.delim(enrich, header = T, sep = '\t')
+      
+      library(readxl)
+      gene_enrichment_TOPGO_Gga_wBg_weighted01Elim_withsig_genes_pvalu001 <- read_excel("Documents/sequencing_results/RNAseq/RNAseq2016/GeneEnrichment_Analyses/gene_enrichment_TOPGO_Gga_wBg_weighted01Elim_withsig_genes_pvalu001.xlsx")
+       View(gene_enrichment_TOPGO_Gga_wBg_weighted01Elim_withsig_genes_pvalu001)
+   
+           enrich<-gene_enrichment_TOPGO_Gga_wBg_weighted01Elim_withsig_genes_pvalu001
+  
+        names(enrich)
+      #[1] "GO.ID"             "Term"              "Annotated"         "Significant"       "Expected"         
+       #[6] "p.value"           "Significant_Genes"
+      
+      
+      
+      enrich <- na.omit(enrich)
+      enrich<-as.data.frame(enrich)
+      names(enrich)
+      
+      enrich$padj<-enrich$p.value
+      structure(enrich)
+      
+      # Sort by padj and select ndot pathway drawings
+      enrich <- enrich[order(enrich$padj, decreasing = F), ]; enrich
+      
+      #if(nrow(enrich)>ndot){enrich <- enrich[1:ndot, ]}
+      enrich
+      #Calculate GeneRatio
+      #ratio <- matrix(as.numeric(unlist(strsplit(as.vector(enrich$GeneRatio),"/"))), ncol = 2, byrow = TRUE)
+      #enrich$GeneRatio <- ratio[,1]/ratio[,2]
+      enrich$GeneRatio<-enrich$Significant/enrich$Annotated
+    
+        enrich$GeneRatio
+      enrich$Description <- factor(enrich$Term, levels = rev(enrich$Term[order(enrich$padj)]))
+      
+      enrich$genesNb<-enrich$Significant
+      
+      #Drawing enrichment scatter plot
+      p <- ggplot(enrich, aes(x = GeneRatio, y = Description, colour = padj, size = genesNb))
+      p <- p + geom_point()
+      #p <- p + scale_colour_gradientn(colours = rainbow(4), guide = "colourbar") + expand_limits(color = seq(0,1,by = 0.25))
+      p <- p +  xlab("Gene ratio") +ylab("")
+      p <- p + theme_bw() + theme(axis.text = element_text(color = "black", size = 10))
+      p <- p + theme(panel.border = element_rect(colour = "black"))
+      p <- p + theme(plot.title = element_text(vjust = 1), legend.key = element_blank())
+      plot (p, width = 8, height = 6, type = 'cairo-png')
+      #ggsave(paste(prefix, '.dot.png', sep = ''),
+    
+     
+  }

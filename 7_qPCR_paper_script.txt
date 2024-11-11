@@ -1,0 +1,734 @@
+
+#qPCR expression already normalised with 
+
+install.packages("ggplot2")
+library(ggplot2)
+
+library(ReadqPCR)
+RNAseq_qPCR_norm2genes_phenowoSEgenecontr <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/for_publi/RNAseq_qPCR_norm2genes_phenowoSEgenecontr.xlsx")
+View(RNAseq_qPCR_norm2genes_phenowoSEgenecontr)  
+qPCR<-RNAseq_qPCR_norm2genes_phenowoSEgenecontr
+
+#exploration my data#######
+
+#ATP6V1C2
+par(mfrow=c(1,2))
+{ with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~Sex, main="ATP6V1C2 Sex", xlab="Sex", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet du sexe
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~MC1Rgenotype, main="ATP6V1C2 MC1R", xlab="MC1R genotype", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet MC1R
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~FeatherAge, main="ATP6V1C2 Age", xlab="Age of Feather", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet age?
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~cPoiYA, main="ATP6V1C2 cPoiYA", xlab="cPoiYA", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet coloration
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~NbPoiYA, main="ATP6V1C2 NbPoiYA", xlab="NbPoiYA", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#effet des points
+with(RNAseq_qPCR_norm2genes_phenowoSEgenecontr,boxplot(ATP6V1C2~DiaPoiYA, main="ATP6V1C2 DiaPoiYA", xlab="DiaPoiYA", ylab="ATP6V1C2")) #
+stripchart(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$ATP6V1C2~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+#pas clair
+
+#try plotter function
+{ 
+plotter <- function(Transcript.Name){
+  y <- as.vector(t(RNAseq_qPCR_norm2genes_phenowoSEgenecontr[, which(colnames(RNAseq_qPCR_norm2genes_phenowoSEgenecontr) == Transcript.Name)]))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA, mean))
+  print(tapply(y,RNAseq_qPCR_norm2genes_phenowoSEgenecontr$DiaPoiYA, mean))
+  
+  par(mfrow=c(2,3))
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype), ylab= Transcript.Name, xlab="MC1R", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$MC1Rgenotype), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+  
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA), ylab= Transcript.Name, xlab="cPoiYA", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$cPoiYA), method = "jitter", pch = 19,col = 3,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge), ylab= Transcript.Name, xlab="Feather Age", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$FeatherAge), method = "jitter", pch = 19,col = 2,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex), ylab= Transcript.Name, xlab="Sex", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$Sex), method = "jitter", pch = 19,col = 4,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), ylab= Transcript.Name, xlab="NbPoiYA", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$NbPoiYA), method = "jitter", pch = 19,col = 4,vertical = TRUE, add = TRUE)      
+  
+  plot(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$DiaPoiYA), ylab= Transcript.Name, xlab= "DiaPoiYA", outline=FALSE)
+  stripchart(y~as.factor(RNAseq_qPCR_norm2genes_phenowoSEgenecontr$DiaPoiYA), method = "jitter", pch = 19,col = 4,vertical = TRUE, add = TRUE)      
+  
+}
+
+head(qPCR)
+#ASIP_AC ATP6V1C2  CALB1   DDC DRCC1 FDNC9L GPER1 GPR143 MAJIN  MC1R MFSD12 MITFv2 MLANA PCSK2  PMEL
+#POMC  RAB38 SERPINE3 SLC45A2  SLC6A4 
+#   STK32A  SYNGR3  TBXA2R  TUBB3 TYR  VAT1L VIP  VIPv2
+plotter("ATP6V1C2") #effet MC1R, cPOIYa, feather age, Sex highe female, NbPoiYa not clear, DiaPoiYa not clear
+plotter("CALB1") #higher VV, higher cPoi int, higher male, no NpBPoi, no Dia, no feahter age
+plotter("DDC") #higher VI, cpoiYA not clear, feather age not clear, higher sex female, higher NbPoi, no Dia
+plotter("DRCC1") #higher Vi, CpoiYA, lower in older, higher female higher NbPoi, no Dia
+plotter("FDNC9L") #higher Vi, higher Cpoi, no age, higher female, higher NbPoi, no Dia
+plotter("GPER1") #effet MC1R, cPOIYa, feather age, Sex highe female, NbPoiYa, DiaPoiYa
+plotter("GPR143") #higher Vi, cPoiYa, decrease with age, higher female, higher Nb, no Dia
+plotter("MAJIN") #a bit higher Vi, higher cPoiYa, no age, higher female, no NbPoi, no Dia
+plotter("MC1R") #higher Vi, cPoiYa, higher younger higher female, Higher NbPoi, higher Dia
+plotter("MFSD12") #higher Vi, cPoi not clear, age not clear, female higher, higher Nbpoi and Dia
+plotter("MITFv2") #no effect
+plotter("MLANA") #higher Vi, cPoi, lower in older, no sex, higher in NbPoi, no Dia
+plotter("PCSK2") #a bit higher in VV, no cPoi, no Age, no sex, no Nb, no Dia
+plotter("POMC") #no effect ev higher in Dia
+plotter("PMEL") #higher Vi, cPoi, higher in younger, higher in female, higher in Nb, no Dia
+plotter("SERPINE3")# higher in VI, cPoi, in younger, in female, NbPoi, no Dia
+plotter("SLC45A2") #higher in VI, cPoi, younger, female, NbPoi, no Dia
+plotter("SLC6A4") #higher in some VI, cPoi, younger, female, NbPoi, no Dia
+plotter("STK32A") #higher in Vi, cPo, younger, female, NbPoi, év Dia
+plotter("SYNGR3") #higher in some VI, cPoi, age, female, no Nb, no Dia
+plotter("TBXA2R") #higher in some Vi, no cPoi, no Age, higher in some female, NbPoi and Dia not clear
+plotter("TUBB3") #no effect
+plotter("TYR") #higher in Vi, NbPoi, younger, female, NnPoi, Dia
+plotter("VAT1L") #higher in Vi, cPoi, younger, female, NbPoi, Dia
+plotter("VIP") #higher in Vi, cPoi, younger, female, NbPoi, Dia
+plotter("VIPv2") #higher in Vi, cPoi, less age effect, higher in female, no Dia, No NbPoi
+
+
+}
+
+#Sex and MC1R Combine effect sex and MC1R######
+{ 
+  data$date <- paste(data$year, data$month, sep="_")
+qPCR$MC1R.Sex<-paste(qPCR$MC1Rgenotype, qPCR$Sex, sep="_")
+par(mfrow = c(1,2))
+boxplot(qPCR$ATP6V1C2 ~ qPCR$MC1R.Sex) #effect in both sex
+boxplot(qPCR$CALB1 ~ qPCR$MC1R.Sex) #higher in VV male, female less clear
+boxplot(qPCR$DDC ~ qPCR$MC1R.Sex) #effect on male only
+boxplot(qPCR$DRCC1 ~ qPCR$MC1R.Sex) #effect in female less clear
+boxplot(qPCR$FDNC9L ~ qPCR$MC1R.Sex) #not clear in male, in femlae higher in VI
+boxplot(qPCR$GPER1 ~ qPCR$MC1R.Sex) #effect in both sex higher in female
+boxplot(qPCR$GPR143 ~ qPCR$MC1R.Sex)#effect in both sex
+boxplot(qPCR$MAJIN ~ qPCR$MC1R.Sex)#effect in both sex
+boxplot(qPCR$MC1R ~ qPCR$MC1R.Sex) #effect in both sex
+boxplot(qPCR$MFSD12 ~ qPCR$MC1R.Sex)#effect in both sex, but higher in amle, more varaition in female
+boxplot(qPCR$MITFv2 ~ qPCR$MC1R.Sex) #higher in male VV, lower in female VV, in fact lower in male VI
+boxplot(qPCR$MLANA ~ qPCR$MC1R.Sex) #effect in both sex
+boxplot(qPCR$PCSK2 ~ qPCR$MC1R.Sex) #lower in male VI
+boxplot(qPCR$PMEL ~ qPCR$MC1R.Sex) ##effect in both sex higher in female
+boxplot(qPCR$POMC ~ qPCR$MC1R.Sex) #no effect
+boxplot(qPCR$SERPINE3 ~ qPCR$MC1R.Sex) #effect in both sex
+boxplot(qPCR$SLC45A2 ~ qPCR$MC1R.Sex) #effect in both sex
+boxplot(qPCR$SLC6A4 ~ qPCR$MC1R.Sex) #effect in both sex, higher in male, more variation in female
+boxplot(qPCR$STK32A ~ qPCR$MC1R.Sex) #effect in both sex
+boxplot(qPCR$SYNGR3 ~ qPCR$MC1R.Sex) #effect in both sex but more variation in female
+boxplot(qPCR$TBXA2R ~ qPCR$MC1R.Sex) ##effect in both sex but lower effect in female, more variation
+boxplot(qPCR$TUBB3 ~ qPCR$MC1R.Sex) #no effect
+boxplot(qPCR$TYR ~ qPCR$MC1R.Sex) ##effect in both sex, higher in female
+boxplot(qPCR$VAT1L ~ qPCR$MC1R.Sex) #effect in both sex, higher in female
+boxplot(qPCR$VIP ~ qPCR$MC1R.Sex) ##effect in both sex, higher in female
+boxplot(qPCR$VIPv2 ~ qPCR$MC1R.Sex) #idem
+boxplot(qPCR$ASIP_AC~ qPCR$MC1R.Sex) #higher in male VI, the other no effect
+}
+
+
+#Barplot#########
+
+  qPCR<-RNAseq_qPCR_norm2genes_phenowoSEgenecontr
+  #remove columns we do not want to present: ASIP, ATP6V1c2... not in the last results
+  qPCR2022<-qPCR[,c(-2,-3,-6,  -8, -10,-15,  -17, -19, -22, -25, -29 )]
+  dim(qPCR2022) #70, 37
+  
+  
+   #1) create a dataframe with the data one column = MC1R genotype, the second column = mean normalised cQ for each genotype
+      VV<-qPCR2022[qPCR2022$MC1Rgenotype=="VV",]  ; VV  
+      VI<-qPCR2022[qPCR2022$MC1Rgenotype=="VI",]  ; VI 
+
+      VVb<-as.data.frame(VV)
+      VIb<-as.data.frame(VI)
+      dim(VVb)
+      
+      library(tibble)
+      library(dplyr)
+      library(tidyr)
+      
+      
+        #calculate the mean for each column of the table
+            moy.VV<-apply(VVb[2:18],2,mean, na.rm = TRUE); moy.VV
+            moy.VI<-apply(VIb[2:18],2,mean, na.rm = TRUE); moy.VI
+            sd.VV<-apply(VVb[2:18],2,sd, na.rm = TRUE); sd.VV
+            sd.VI<-apply(VIb[2:18],2,sd, na.rm = TRUE); sd.VI
+           # se.VV<-apply(VVb[2:18],2,sd/sqrt(length(VVb)), na.rm = TRUE); se.VV
+            
+            
+            sd.moy.VV.VI.genes22<-rbind(moy.VV, moy.VI,sd.VV,sd.VI)
+            #take only the genes I have
+            #sd.moy.VV.VI.genes22<-sd.moy.VV.VI[ , c(-2,-5, -9,-18, -21 )]; sd.moy.VV.VI.genes22
+           sd.moy.VV.VI.genes22<-as.data.frame(sd.moy.VV.VI.genes22)
+            sd.moy.VV.VI.genes22$MC1r<-row.names(sd.moy.VV.VI.genes22)
+            names(sd.moy.VV.VI.genes22)
+            write.table(sd.moy.VV.VI.genes22, file="~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/genesforgraph.txt", row.names=TRUE, col.names=TRUE)
+          View(sd.moy.VV.VI.genes22)
+      
+           #try to transpose 
+          sd.moy.VV.VI.genes22_long <- sd.moy.VV.VI.genes22 %>%
+            pivot_longer(cols = starts_with("moy.VV"),
+                         names_to = "MC1R",
+                         row= colnames(sd.moy.VV.VI.genes22)
+                        )
+          sd.moy.VV.VI.genes22_long  
+          
+   #rprepare the files for the graph by hand 
+            meanGeneexpressionMC1R <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/meanGeneexpressionMC1R.xlsx")
+             View(meanGeneexpressionMC1R)      
+            names(meanGeneexpressionMC1R)
+            #[1] "genes"                "Norm_Gene_expression" "MC1R"                 "SD"                   "SE"                  
+
+#graphe for publication##############
+            #graphe only some genes          
+            
+    {         library(readxl)
+      genesforgraph20240212b <- read_excel("~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/for_publi/genesforgraph20240212b.xlsx")
+     View(genesforgraph20240212b)   
+     names(genesforgraph20240212b)
+   #  [1] "Genes"                      "Normalised_gene_expression" "MC1R"                       "SD"                        
+    # [5] "SE"   
+            
+        
+           # trial to conserve orders of x 
+          
+            library(forcats)
+            genesforgraph20240212b["Genes"]
+            
+            
+            p2<-ggplot(data=genesforgraph20240212b, aes(x = fct_relevel(
+              Genes,
+              "SYNGR3","FNDC9L","VAT1L","SLC6A4",
+              "MLANA","PMEL", "RAB38", "GPR143", "DDC",
+              "VIP", "TYR", "SLC45A2", "TBXA2R",
+              "MFSD12",  "CALB1",  "MC1R","MITF"
+            ),
+            y= Normalised_gene_expression, fill= MC1R)) +
+           
+              geom_bar(stat="identity", color="black", position=position_dodge()) + theme_minimal() +
+              # SE est utilisé comme barre d'erreur
+              geom_errorbar(aes(ymin=Normalised_gene_expression-SE, ymax=Normalised_gene_expression+SE), width=.2,
+                            position=position_dodge(.9)) +
+              # Couleurs personnalisées
+              scale_fill_manual(values=c('#D2691E','#FFFFE0')) 
+            
+            #add label
+            p2 + labs(x="Normalised gene expression", y = "Genes")
+            # Barplot horizontal
+            p2 + coord_flip() 
+    }   
+            
+ }           
+      
+    
+              
+   ###model with BROOD AS RANDOM FACTOR#####
+ #lme######################################  
+              
+  ##trial with lme instead of lmer since not complex random factors, not a big data and interested to p-values of fixed effects.
+              
+    install.packages("nlme")
+      
+    library(nlme)  
+              
+   ###model with BROOD AS RANDOM FACTOR#####
+              
+   #####for 1 gene######
+              
+     library(readxl)
+     RNAseq_qPCR_norm2genes_phenowoSEgenecontr <- read_excel("Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/for_publi/RNAseq_qPCR_norm2genes_phenowoSEgenecontr.xlsx")
+              View(RNAseq_qPCR_norm2genes_phenowoSEgenecontr)   
+    qPCR<-RNAseq_qPCR_norm2genes_phenowoSEgenecontr
+              #keep only 2022 genes
+              names(qPCR)
+              
+     qPCR2022<-qPCR[,c(-2,-3,-6,  -8, -10,-15,  -17, -19, -22, -25, -29 )]
+              names(qPCR2022)
+              
+     
+              
+                       #trial with TYR
+              par(mfrow=c(1,1))
+              boxplot(log(TYR+1)~ MC1Rgenotype,data=qPCR2022,xlab="MC1R",ylab="log(TYR+1)")
+              boxplot(log(TYR+1)~ Sex,data=qPCR2022,xlab="Sex",ylab="log(TYR+1)")
+              boxplot(log(TYR+1)~ BroodIDBorn,data=qPCR2022,xlab="Brood",ylab="log(TYR+1)")
+              boxplot(log(TYR+1)~ FeatherAge,data=qPCR2022,xlab="Age",ylab="log(TYR+1)")
+              
+              
+ ####1)model with interaction  ######  
+ {            
+     lme.BID.int <- lme(log(TYR + 1) ~ MC1Rgenotype * Sex, random= ~1 | BroodIDBorn, data = qPCR2022)
+              
+       # Get a summary with p-values
+      summary( lme.BID.int)           
+              
+      Linear mixed-effects model fit by REML
+      Data: qPCR2022 
+      AIC      BIC   logLik
+      78.6268 91.76473 -33.3134
+      
+      Random effects:
+        Formula: ~1 | BroodIDBorn
+      (Intercept)  Residual
+      StdDev:   0.2049213 0.3263944
+      
+      Fixed effects:  log(TYR + 1) ~ MC1Rgenotype * Sex 
+      Value Std.Error DF    t-value p-value
+      (Intercept)         0.7570728 0.3611990 43  2.0959990  0.0420
+      MC1RgenotypeVV     -0.8409577 0.4031808 43 -2.0858082  0.0430
+      Sex                 0.4022428 0.1929967 43  2.0841949  0.0431
+      MC1RgenotypeVV:Sex  0.0786469 0.2210572 43  0.3557761  0.7237 #not significant interaction
+      Correlation: 
+        (Intr) MC1RgVV Sex   
+      MC1RgenotypeVV     -0.901               
+      Sex                -0.957  0.868        
+      MC1RgenotypeVV:Sex  0.843 -0.956  -0.882
+      
+      Standardized Within-Group Residuals:
+        Min         Q1        Med         Q3        Max 
+      -1.5791772 -0.6328646 -0.2258524  0.7586885  1.6856876 
+      
+      Number of Observations: 70
+      Number of Groups: 24 
+      
+      
+ }
+     #no significant interaction, interaction can be removed.
+              
+              
+ ####2) model wo interaction#####
+   { 
+                 lme.BID <- lme(log(TYR + 1) ~ MC1Rgenotype + Sex, random= ~1 | BroodIDBorn, data = qPCR2022)
+      
+      # Get a summary with p-values
+      summary( lme.BID)           
+      
+            #Linear mixed-effects model fit by REML
+      Linear mixed-effects model fit by REML
+      Data: qPCR2022 
+      AIC      BIC    logLik
+      75.56654 86.59 -32.78327
+      
+      Random effects:
+        Formula: ~1 | BroodIDBorn
+                (Intercept)  Residual
+      StdDev:   0.2046174   0.3239067
+      
+      Fixed effects:  log(TYR + 1) ~ MC1Rgenotype + Sex 
+                        Value  Std.Error DF   t-value p-value
+      (Intercept)     0.6492931 0.19283308 44  3.367125  0.0016
+      MC1RgenotypeVV -0.7044110 0.11730673 44 -6.004864  0.0000
+      Sex             0.4627593 0.09031935 44  5.123590  0.0000
+      Correlation: 
+        (Intr) MC1RVV
+      MC1RgenotypeVV -0.599       
+      Sex            -0.840  0.181
+      
+      Standardized Within-Group Residuals:
+        Min         Q1        Med         Q3        Max 
+      -1.5737666 -0.6589054 -0.2178162  0.7463570  1.6935645 
+      
+      Number of Observations: 70
+      Number of Groups: 24 
+        
+      #check Model assumptions of the model
+     { 
+         par(mfrow=c(1,1))
+      plot(fitted(lme.BID), residuals(lme.BID), main="residual plot", pch=19)
+      abline(h=0, lty=2) #seems ok
+      
+      #are the residues normally distributed
+      qqnorm(resid(lme.BID))
+      qqline(resid(lme.BID)) #more or less
+      
+      
+   }
+   }   
+            
+            
+            
+ #########lme multiple gene#####
+              
+      # Define your gene columns
+      gene_columns <- c("CALB1", "DDC", "FDNC9L", "GPR143", "MC1R", "MFSD12", "MITFv2", "MLANA", 
+                        "PMEL", "RAB38", "SLC45A2", "SLC6A4", "SYNGR3", "TBXA2R", "TYR", "VAT1L", "VIP")
+      
+    
+     ####1) effect of interactions MC1R Sex####
+ { 
+      # Loop through each gene and apply log transformation
+      results.int <- lapply(gene_columns, function(gene) {
+        # Apply log transformation (log) to each gene's expression values
+        qPCR2022[[paste0("log_", gene)]] <- log(qPCR2022[[gene]] + 1)  # Adding 1 to avoid log(0)
+        
+        # Build the formula dynamically
+        formula <- as.formula(paste0("log_", gene, " ~ MC1Rgenotype * Sex"))
+        
+        # Fit the model using the log-transformed gene data
+        model.BID.multi <- lme(formula, random = ~ 1 | BroodIDBorn, data = qPCR2022)
+        
+        # Get the p-value for the genotype (MC1Rgenotype) effect
+        summary(model.BID.multi)$tTable["MC1RgenotypeVV:Sex", "p-value"]
+      })
+      
+      
+      # Print the p-values for each gene
+      results.int
+      
+    #  [[1]]
+    #  [1] 0.2413521
+      
+    #  [[2]]
+    #  [1] 0.07536071
+      
+    #  [[3]]
+    #  [1] 0.3513384
+      
+    #  [[4]]
+    #  [1] 0.8741819
+      
+    #  [[5]]
+    #  [1] 0.3731766
+      
+     # [[6]]
+     # [1] 0.3902984
+      
+     # [[7]]
+     # [1] 0.08091549
+      
+    #  [[8]]
+     # [1] 0.7546373
+      
+     # [[9]]
+     # [1] 0.5549561
+      
+     # [[10]]
+     # [1] 0.3105036
+      
+      #[[11]]
+      #[1] 0.2175415
+      
+     # [[12]]
+     # [1] 0.167062
+      
+      #[[13]]
+      #[1] 0.7705685
+      
+     # [[14]]
+     # [1] 0.6880392
+      
+     # [[15]]
+     # [1] 0.7237478
+      
+     # [[16]]
+      #[1] 0.4437826
+      
+     # [[17]]
+     # [1] 0.05901181
+      
+        #no interaction necessary in the model
+    
+      
+      # Print the value of the test, 
+      results.int.value <- lapply(gene_columns, function(gene) {
+        # Apply log transformation (log) to each gene's expression values
+        qPCR2022[[paste0("log_", gene)]] <- log(qPCR2022[[gene]] + 1)  # Adding 1 to avoid log(0)
+        
+        # Build the formula dynamically
+        formula <- as.formula(paste0("log_", gene, " ~ MC1Rgenotype * Sex"))
+        
+        # Fit the model using the log-transformed gene data
+        model.BID.multi <- lme(formula, random = ~ 1 | BroodIDBorn, data = qPCR2022)
+        
+        # Get the p-value for the genotype (MC1Rgenotype) effect
+        summary(model.BID.multi)$tTable["MC1RgenotypeVV:Sex", "Value"]
+      })
+      # Print the effect value for each gene
+      results.int.value
+      
+      [[1]]
+      [1] -0.3302039
+      
+      [[2]]
+      [1] 0.7138614
+      
+      [[3]]
+      [1] -0.1086833
+      
+      [[4]]
+      [1] 0.02217735
+      
+      [[5]]
+      [1] 0.1193992
+      
+      [[6]]
+      [1] 0.1075149
+      
+      [[7]]
+      [1] -0.08822204
+      
+      [[8]]
+      [1] 0.05362821
+      
+      [[9]]
+      [1] 0.1125447
+      
+      [[10]]
+      [1] 0.1708868
+      
+      [[11]]
+      [1] 0.4031396
+      
+      [[12]]
+      [1] 0.3678128
+      
+      [[13]]
+      [1] 0.05988829
+      
+      [[14]]
+      [1] 0.05652432
+      
+      [[15]]
+      [1] 0.07864688
+      
+      [[16]]
+      [1] -0.1147989
+      
+      [[17]]
+      [1] -0.3755194
+      
+}
+       #no interaction is significant, thus can be removed from the model
+      
+              
+      #####2) mutliple model without interaction#####
+      {  
+        # Loop through each gene and apply log transformation
+        
+      results.m.pvalue <- lapply(gene_columns, function(gene) {
+        # Apply log transformation (log) to each gene's expression values
+        qPCR2022[[paste0("log_", gene)]] <- log(qPCR2022[[gene]] + 1)  # Adding 1 to avoid log(0)
+        
+        # Build the formula dynamically
+        formula <- as.formula(paste0("log_", gene, " ~ MC1Rgenotype + Sex"))
+        
+        # Fit the model using the log-transformed gene data
+        model.BID.multi <- lme(formula, random = ~ 1 | BroodIDBorn, data = qPCR2022)
+        
+        # Get the p-value for the genotype (MC1Rgenotype) effect
+        summary(model.BID.multi)$tTable["MC1RgenotypeVV", "p-value"]
+      })
+      
+     
+      # Print the p-values for each gene
+      results.m.pvalue
+      
+      [[1]]
+      [1] 0.002827767
+      
+      [[2]]
+      [1] 0.3365185
+      
+      [[3]]
+      [1] 0.1764546
+      
+      [[4]]
+      [1] 1.927068e-06
+      
+      [[5]]
+      [1] 0.04702955
+      
+      [[6]]
+      [1] 0.01046403
+      
+      [[7]]
+      [1] 0.7124844
+      
+      [[8]]
+      [1] 4.639562e-06
+      
+      [[9]]
+      [1] 3.480469e-05
+      
+      [[10]]
+      [1] 0.0006677452
+      
+      [[11]]
+      [1] 0.0001236064
+      
+      [[12]]
+      [1] 0.246204
+      
+      [[13]]
+      [1] 0.007905133
+      
+      [[14]]
+      [1] 0.1180907
+      
+      [[15]]
+      [1] 3.319592e-07
+      
+      [[16]]
+      [1] 2.543299e-07
+      
+      [[17]]
+      [1] 1.592587e-07
+      
+      # Combine results into a dataframe for easy review
+      gene_results <- data.frame(gene = gene_columns, p_value = unlist(results.m.pvalue))
+      gene_results
+      #   gene      p_value
+      1    CALB1 2.827767e-03
+      2      DDC 3.365185e-01
+      3   FDNC9L 1.764546e-01
+      4   GPR143 1.927068e-06
+      5     MC1R 4.702955e-02
+      6   MFSD12 1.046403e-02
+      7   MITFv2 7.124844e-01
+      8    MLANA 4.639562e-06
+      9     PMEL 3.480469e-05
+      10   RAB38 6.677452e-04
+      11 SLC45A2 1.236064e-04
+      12  SLC6A4 2.462040e-01
+      13  SYNGR3 7.905133e-03
+      14  TBXA2R 1.180907e-01
+      15     TYR 3.319592e-07
+      16   VAT1L 2.543299e-07
+      17     VIP 1.592587e-07
+              
+      ######Correction for multiple testing#######
+      # Assuming `results` contains p-values for each gene
+      p_values <- unlist(results.m.pvalue)
+      
+      # Apply FDR correction (Benjamini-Hochberg method)
+      p_values_fdr <- p.adjust(p_values, method = "fdr")
+      
+      # Combine FDR-adjusted p-values with gene names
+      gene_results <- data.frame(gene = gene_columns, p_value = p_values, p_value_fdr = p_values_fdr)
+      
+      # Print or review the results
+      print(gene_results) 
+      
+      gene      p_value  p_value_fdr
+      1    CALB1 2.827767e-03 5.341338e-03
+      2      DDC 3.365185e-01 3.575509e-01
+      3   FDNC9L 1.764546e-01 2.142662e-01
+      4   GPR143 1.927068e-06 8.190041e-06
+      5     MC1R 4.702955e-02 6.662519e-02
+      6   MFSD12 1.046403e-02 1.617169e-02
+      7   MITFv2 7.124844e-01 7.124844e-01
+      8    MLANA 4.639562e-06 1.577451e-05
+      9     PMEL 3.480469e-05 9.861329e-05
+      10   RAB38 6.677452e-04 1.418958e-03
+      11 SLC45A2 1.236064e-04 3.001869e-04
+      12  SLC6A4 2.462040e-01 2.790312e-01
+      13  SYNGR3 7.905133e-03 1.343873e-02
+      14  TBXA2R 1.180907e-01 1.544263e-01
+      15     TYR 3.319592e-07 1.881102e-06
+      16   VAT1L 2.543299e-07 1.881102e-06
+      17     VIP 1.592587e-07 1.881102e-06
+      
+      ###get the estimates for each gene: attention the data were log transform + 1
+      
+      results.m.value <- lapply(gene_columns, function(gene) {
+      # Apply log transformation (log) to each gene's expression values
+      qPCR2022[[paste0("log_", gene)]] <- log(qPCR2022[[gene]] + 1)  # Adding 1 to avoid log(0)
+      
+      # Build the formula dynamically
+      formula <- as.formula(paste0("log_", gene, " ~ MC1Rgenotype + Sex"))
+      
+      # Fit the model using the log-transformed gene data
+      model.BID.multi <- lme(formula, random = ~ 1 | BroodIDBorn, data = qPCR2022)
+      
+      # Get the p-value for the genotype (MC1Rgenotype) effect
+      summary(model.BID.multi)$tTable["MC1RgenotypeVV", "Value"]
+      })
+      
+      # Print the p-values for each gene
+      results.m.value
+      
+      [[1]]
+      [1] 0.5097922
+      
+      [[2]]
+      [1] -0.1729271
+      
+      [[3]]
+      [1] -0.08429518
+      
+      [[4]]
+      [1] -0.423388
+      
+      [[5]]
+      [1] -0.1387272
+      
+      [[6]]
+      [1] -0.1459968
+      
+      [[7]]
+      [1] -0.008212509
+      
+      [[8]]
+      [1] -0.4773914
+      
+      [[9]]
+      [1] -0.4665742
+      
+      [[10]]
+      [1] -0.3155289
+      
+      [[11]]
+      [1] -0.6765983
+      
+      [[12]]
+      [1] -0.1391075
+      
+      [[13]]
+      [1] -0.280569
+      
+      [[14]]
+      [1] -0.1020278
+      
+      [[15]]
+      [1] -0.704411
+      
+      [[16]]
+      [1] -0.496374
+      
+      [[17]]
+      [1] -0.6957637
+      
+      # Combine FDR-adjusted p-values and values with gene names
+      values <- unlist(results.m.value)
+      gene_results <- data.frame(gene = gene_columns, p_value = p_values, p_value_fdr = p_values_fdr, value = values)
+      gene_results
+     #      gene      p_value  p_value_fdr        value
+      1    CALB1 2.827767e-03 5.341338e-03  0.509792158
+      2      DDC 3.365185e-01 3.575509e-01 -0.172927112
+      3   FDNC9L 1.764546e-01 2.142662e-01 -0.084295179
+      4   GPR143 1.927068e-06 8.190041e-06 -0.423388015
+      5     MC1R 4.702955e-02 6.662519e-02 -0.138727247
+      6   MFSD12 1.046403e-02 1.617169e-02 -0.145996808
+      7   MITFv2 7.124844e-01 7.124844e-01 -0.008212509
+      8    MLANA 4.639562e-06 1.577451e-05 -0.477391369
+      9     PMEL 3.480469e-05 9.861329e-05 -0.466574158
+      10   RAB38 6.677452e-04 1.418958e-03 -0.315528886
+      11 SLC45A2 1.236064e-04 3.001869e-04 -0.676598311
+      12  SLC6A4 2.462040e-01 2.790312e-01 -0.139107541
+      13  SYNGR3 7.905133e-03 1.343873e-02 -0.280569037
+      14  TBXA2R 1.180907e-01 1.544263e-01 -0.102027767
+      15     TYR 3.319592e-07 1.881102e-06 -0.704411018
+      16   VAT1L 2.543299e-07 1.881102e-06 -0.496373978
+      17     VIP 1.592587e-07 1.881102e-06 -0.695763687
+      
+      
+      write.table(gene_results, file="~/Documents/methodes/qPCR/qPCR_for_RNAseq2016/qbase_results/PAdj_gene_BID_lme_log.txt", row.names=TRUE, col.names=TRUE)
+      
+      }
